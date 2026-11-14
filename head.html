@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>*,*::before,*::after{box-sizing:border-box}body{margin:0;font:14px system-ui,sans-serif}[hidden]{display:none!important}</style>
+<title>Sense Stand Head</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Same look as the full stand viewer: 3D viewport left, spec rail right; stacks on phones. */
+:root{
+  --bg:#0b0d0e; --panel:#121516; --line:#23292b; --fg:#e8ecea; --muted:#8d9894;
+  --accent:#86e83a; --accent-dim:#3c6a1a;
+  --f-display:"Space Grotesk",system-ui,sans-serif;
+  --f-body:"Inter",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:14px}
+.app{display:grid;grid-template-columns:minmax(0,1fr) 380px;height:100%}
+.view{position:relative;min-height:0;overflow:hidden}
+#c{display:block;width:100%;height:100%;touch-action:none}
+.hud{position:absolute;left:max(16px,env(safe-area-inset-left,0px));top:16px;display:flex;flex-direction:column;gap:4px;pointer-events:none}
+.hud .big{font-family:var(--f-display);font-weight:700;font-size:40px;line-height:1;font-variant-numeric:tabular-nums}
+.hud .lbl{font-family:var(--f-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.hud .sub{font-family:var(--f-mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.hint{position:absolute;right:16px;bottom:14px;font-size:12px;color:var(--muted);pointer-events:none}
+aside{background:var(--panel);border-left:1px solid var(--line);overflow-y:auto;padding-block:24px 32px;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:26px}
+.eyebrow{font-family:var(--f-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+h1{font-family:var(--f-display);font-size:28px;margin:6px 0 6px;text-wrap:balance}
+h2{font-family:var(--f-display);font-size:15px;margin:0 0 12px;letter-spacing:.02em}
+p{margin:0;color:var(--muted);line-height:1.55}
+a{color:var(--accent)}
+.ctrl{display:flex;flex-direction:column;gap:16px}
+.row{display:grid;grid-template-columns:1fr auto;gap:6px 10px;align-items:center}
+.row label{font-weight:500}
+.row output{font-family:var(--f-mono);font-variant-numeric:tabular-nums;color:var(--accent)}
+.row input{grid-column:1/-1;width:100%;accent-color:var(--accent)}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+button{font:500 13px var(--f-body);color:var(--fg);background:transparent;border:1px solid var(--line);border-radius:6px;padding:7px 12px;cursor:pointer}
+button:hover{border-color:var(--accent-dim)}
+button[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.feat{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.feat li{display:grid;grid-template-columns:120px 1fr;gap:10px;line-height:1.4}
+.feat b{font-weight:600}
+.feat span{color:var(--muted)}
+.tbl{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{text-align:left;padding:7px 6px 7px 0;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--f-mono);font-weight:500;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+td.n{font-family:var(--f-mono);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+td small{display:block;color:var(--muted)}
+tfoot td{font-weight:600;border-bottom:none}
+.note{font-size:12.5px;border-left:2px solid var(--accent-dim);padding-left:10px}
+@media (max-width:820px){
+  .app{grid-template-columns:1fr;grid-template-rows:62vh auto;height:auto}
+  aside{border-left:none;border-top:1px solid var(--line)}
+  .hud .big{font-size:32px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="app">
+  <div class="view">
+    <canvas id="c" aria-label="Interactive 3D model of the DDLC Sense stand pan and tilt head"></canvas>
+    <div class="hud">
+      <span class="lbl">Sheet-metal pan · tilt head</span>
+      <span class="big" id="hBig">+35° / −12°</span>
+    </div>
+    <div class="hint">Drag to orbit · scroll or pinch to zoom</div>
+  </div>
+
+  <aside>
+    <div>
+      <div class="eyebrow">Sense R1 floor stand · PT-2 sheet-metal head</div>
+      <h1>Pan &amp; Tilt Head</h1>
+      <p>Made only from 3 mm MS sheet: three laser-cut parts, two of them bent, plus bought bolts and knobs. No machining. Sizes in mm. <a href="index.html">Full stand</a></p>
+    </div>
+
+    <section class="ctrl">
+      <h2>Pose</h2>
+      <div class="row"><label for="sP">Rotate</label><output id="oP"></output><input id="sP" type="range" min="-180" max="180" value="35" step="1"></div>
+      <div class="row"><label for="sT">Tilt</label><output id="oT"></output><input id="sT" type="range" min="-45" max="90" value="-12" step="1"></div>
+      <div class="btns">
+        <button id="bLvl" type="button">Level</button>
+        <button id="bFit" type="button">Reset view</button>
+      </div>
+    </section>
+
+    <section>
+      <h2>Parts</h2>
+      <div class="tbl"><table>
+        <thead><tr><th>Qty</th><th>Part</th></tr></thead>
+        <tbody id="bom"></tbody>
+      </table></div>
+    </section>
+
+    <p class="note">One sheet thickness, one laser job, one press brake. Finish: black powder coat, zinc fasteners. Mount plate sits 110 mm above the mast top. The STL in the repo is the head alone, level.</p>
+  </aside>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+
+/* ---------- Renderer / scene ---------- */
+const canvas=$('c');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.outputEncoding=THREE.sRGBEncoding;
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x0b0d0e);
+scene.fog=new THREE.Fog(0x0b0d0e,1.2,3);
+const camera=new THREE.PerspectiveCamera(35,1,0.01,10);
+const controls=new THREE.OrbitControls(camera,canvas);
+controls.enableDamping=true; controls.maxPolarAngle=Math.PI*0.6;
+controls.minDistance=0.18; controls.maxDistance=1.6;
+function resetView(){camera.position.set(0.34,0.26,0.42);controls.target.set(0,0.055,0);controls.update();}
+resetView();
+
+scene.add(new THREE.HemisphereLight(0xdfe8e4,0x0c0e0e,0.3));
+const key=new THREE.DirectionalLight(0xffffff,1.1);
+key.position.set(0.5,1,0.6); key.castShadow=true;
+key.shadow.mapSize.set(2048,2048);
+Object.assign(key.shadow.camera,{left:-0.25,right:0.25,top:0.35,bottom:-0.15,near:0.1,far:3});
+key.shadow.bias=-0.0004;
+scene.add(key);
+const rim=new THREE.DirectionalLight(0xdfe6ff,0.45); rim.position.set(-0.6,0.5,-0.5); scene.add(rim);
+
+/* ---------- Materials ---------- */
+const M={
+  powder:new THREE.MeshStandardMaterial({color:0x111315,roughness:0.6,metalness:0.3,side:THREE.DoubleSide}),
+  zinc:new THREE.MeshStandardMaterial({color:0xb9c0c3,roughness:0.28,metalness:1}),
+  nylon:new THREE.MeshStandardMaterial({color:0x0d0d0d,roughness:0.75}),
+  ptfe:new THREE.MeshStandardMaterial({color:0xe8e6df,roughness:0.6}),
+  paint:new THREE.MeshStandardMaterial({color:0xd9dedc,roughness:0.5}),
+  weld:new THREE.MeshStandardMaterial({color:0x3a3a36,roughness:0.9,metalness:0.4}),
+  green:new THREE.MeshStandardMaterial({color:0x86e83a,emissive:0x5fbf22,emissiveIntensity:0.35,roughness:0.45}),
+  ghost:new THREE.MeshStandardMaterial({color:0x2a3133,roughness:0.6,metalness:0.2,transparent:true,opacity:0.45}),
+};
+
+/* ---------- Geometry helpers (mm, Y up) ---------- */
+const T=3;     // every sheet part is 3 mm MS
+const STUB=90; // visible length of the top mast stage below the head
+const PIV=70;  // tilt pivot height above the mast top
+const root=new THREE.Group(); root.scale.setScalar(0.001); scene.add(root);
+const add=(g,mat,parent,x=0,y=0,z=0)=>{const m=new THREE.Mesh(g,mat);m.position.set(x,y,z);parent.add(m);return m;};
+function cyl(r,h,mat,x,y,z,parent,seg=40,axis='y'){ // axis y: y = bottom; axis x: x = start face
+  const m=add(new THREE.CylinderGeometry(r,r,h,seg),mat,parent,axis==='x'?x+h/2:x,axis==='y'?y+h/2:y,z);
+  if(axis==='x')m.rotation.z=Math.PI/2;return m;
+}
+function rectPath(half,P_){const p=P_||new THREE.Path();p.moveTo(-half,-half);p.lineTo(half,-half);p.lineTo(half,half);p.lineTo(-half,half);p.closePath();return p;}
+function sqTube(size,wall,len,mat,y,parent){
+  const s=rectPath(size/2,new THREE.Shape());s.holes.push(rectPath(size/2-wall));
+  const g=new THREE.ExtrudeGeometry(s,{depth:len,bevelEnabled:false});g.rotateX(-Math.PI/2);return add(g,mat,parent,0,y,0);
+}
+const circ=(x,y,r)=>{const h=new THREE.Path();h.absarc(x,y,r,0,Math.PI*2,true);return h;};
+// flat sheet whose outline is drawn in the side view (u = −z, v = y), cut T thick along +x from x0
+function sideSheet(shape,parent,x0,mat=M.powder){
+  const g=new THREE.ExtrudeGeometry(shape,{depth:T,bevelEnabled:false,curveSegments:24});g.rotateY(Math.PI/2);
+  return add(g,mat,parent,x0,0,0);
+}
+// 90° bend seen from the front, centre (cx,cy), quadrant start angle a0, length along z
+function bend(parent,cx,cy,a0,len,ri=T){
+  const s=new THREE.Shape();s.absarc(0,0,ri+T,a0,a0+Math.PI/2,false);s.absarc(0,0,ri,a0+Math.PI/2,a0,true);
+  const g=new THREE.ExtrudeGeometry(s,{depth:len,bevelEnabled:false,curveSegments:8});g.translate(0,0,-len/2);
+  return add(g,M.powder,parent,cx,cy,0);
+}
+function starKnob(parent,x,y,z,axis){ // 5-lobe nylon knob; axis 'y' up, 'x' sideways (+x)
+  const g=new THREE.Group();g.position.set(x,y,z);if(axis==='x')g.rotation.z=-Math.PI/2;parent.add(g);
+  cyl(9,11,M.nylon,0,0,0,g,28);
+  for(let i=0;i<5;i++){const a=i*Math.PI*2/5;cyl(4.6,11,M.nylon,Math.cos(a)*10,0,Math.sin(a)*10,g,16);}
+  cyl(5,1,M.green,0,11,0,g,20);
+  return g;
+}
+
+/* ---------- Head geometry ---------- */
+const stub=new THREE.Group();root.add(stub); // context: top of the 30×30 mast stage
+sqTube(30,1.6,STUB,M.ghost,-STUB,stub);
+
+// 1. Base disc Ø80 × 3, welded on the mast with 4 sheet gussets; captive M10 stud
+cyl(40,T,M.powder,0,0,0,root,64);
+for(let k=0;k<4;k++){
+  const s=new THREE.Shape();s.moveTo(0,0);s.lineTo(0,-24);s.lineTo(22,0);s.closePath();
+  const g=new THREE.ExtrudeGeometry(s,{depth:T,bevelEnabled:false});g.translate(15,0,-T/2);
+  const m=add(g,M.powder,root);m.rotation.y=k*Math.PI/2;
+}
+for(let i=0;i<36;i++){ // laser-etched 10° scale
+  const a=i*Math.PI/18,long=i%3===0,r0=long?31:34;
+  const t=add(new THREE.BoxGeometry(0.6,0.15,38.5-r0),M.paint,root,Math.sin(a)*(r0+38.5)/2,T+0.05,Math.cos(a)*(r0+38.5)/2);t.rotation.y=a;
+}
+cyl(5,16,M.zinc,0,T,0,root,20); // M10 stud
+cyl(14,1,M.ptfe,0,T,0,root,40); // PTFE slide washer
+
+// 2. U-bracket: one 3 mm blank, two 90° bends; turns on the stud
+const pan=new THREE.Group();root.add(pan);
+const BY=T+1, W=58.5; // bracket underside, inner half-width to bend centres
+add(new THREE.BoxGeometry(2*W,T,50),M.powder,pan,0,BY+T/2,0);
+add(new THREE.BoxGeometry(1.2,0.2,6),M.green,pan,0,BY+T+0.1,22); // pan index line
+for(const sx of[-1,1])bend(pan,sx*W,BY+2*T,sx>0?-Math.PI/2:Math.PI,50);
+const AR=32; // arm top radius
+function arm(slot){
+  const s=new THREE.Shape();s.moveTo(-AR,BY+2*T);s.lineTo(AR,BY+2*T);s.lineTo(AR,PIV);s.absarc(0,PIV,AR,0,Math.PI,false);s.closePath();
+  s.holes.push(circ(0,PIV,4.2));
+  if(slot){ // tilt arc slot, R22, −45° to +90°
+    const R=22,w=3.2,d=Math.PI/180,a0=135*d,a1=0;
+    const h=new THREE.Path();
+    h.absarc(0,PIV,R+w,a0,a1,true);
+    h.absarc(R*Math.cos(a1),PIV+R*Math.sin(a1),w,a1,a1-Math.PI,true);
+    h.absarc(0,PIV,R-w,a1,a0,false);
+    h.absarc(R*Math.cos(a0),PIV+R*Math.sin(a0),w,a0+Math.PI,a0,true);
+    s.holes.push(h);
+  }
+  return s;
+}
+sideSheet(arm(false),pan,-W-2*T);
+sideSheet(arm(true),pan,W+T);
+starKnob(pan,0,BY+T,0,'y'); // pan lock on the stud
+// tilt scale etched round the slot
+for(let deg=-45;deg<=90;deg+=15){
+  const g=new THREE.Group();g.position.set(W+2*T+0.1,PIV,0);g.rotation.x=-deg*Math.PI/180;pan.add(g);
+  add(new THREE.BoxGeometry(0.15,deg%45===0?4:2.5,0.6),M.paint,g,0,26.5+(deg%45===0?2:1.25),0);
+}
+// pivot: M8 bolt, nylon washers, nyloc
+for(const sx of[-1,1]){ // short M8 shoulder bolt each side: head outside, nyloc inside the ear
+  const o=sx>0?W+2*T:-W-2*T, i=sx>0?W-2*T:-W+2*T;
+  cyl(4,4*T+12,M.zinc,Math.min(o,i)-(sx>0?6:-6)*0+(sx>0?-6:0),PIV,0,pan,20,'x');
+  cyl(7.5,5.3,M.zinc,sx>0?o:o-5.3,PIV,0,pan,6,'x');
+  cyl(7.5,6,M.zinc,sx>0?i-6:i,PIV,0,pan,6,'x');
+}
+for(const sx of[-1,1])cyl(8,1,M.nylon,sx>0?W:-W-1,PIV,0,pan,24,'x');
+
+// 3. Tilt cradle: one 3 mm blank, top plate + two ears bent down
+const tilt=new THREE.Group();tilt.position.y=PIV;pan.add(tilt);
+const E=W-T; // ear outer face sits 1 mm inside the arm (nylon washer)
+{
+  const s=new THREE.Shape(),w=E-T*2,d=17.5;
+  s.moveTo(-w,-d);s.lineTo(w,-d);s.lineTo(w,d);s.lineTo(-w,d);s.closePath();
+  for(const sx of[-1,1])for(const sz of[-1,1]){const h=new THREE.Path(),cx=sx*40,cy=sz*9;
+    h.moveTo(cx-4.3,cy-1.7);h.lineTo(cx+4.3,cy-1.7);h.absarc(cx+4.3,cy,1.7,-Math.PI/2,Math.PI/2,false);h.lineTo(cx-4.3,cy+1.7);h.absarc(cx-4.3,cy,1.7,Math.PI/2,1.5*Math.PI,false);s.holes.push(h);}
+  s.holes.push(circ(0,0,3.4));
+  for(const sx of[-1,1])s.holes.push(circ(sx*20,0,6)); // lightening / cable holes
+  const g=new THREE.ExtrudeGeometry(s,{depth:T,bevelEnabled:false,curveSegments:16});g.rotateX(-Math.PI/2);
+  add(g,M.powder,tilt,0,40-T,0);
+  add(new THREE.BoxGeometry(2*w,0.6,0.6),M.green,tilt,0,40-T/2,17.8);
+  for(const sx of[-1,1])bend(tilt,sx*(E-2*T),40-2*T,sx>0?0:Math.PI/2,35);
+  const ear=new THREE.Shape();ear.moveTo(-17.5,40-2*T);ear.lineTo(-17.5,0);ear.absarc(0,0,17.5,Math.PI,2*Math.PI,false);ear.lineTo(17.5,40-2*T);ear.closePath();
+  ear.holes.push(circ(0,0,4.2));ear.holes.push(circ(0,22,3.2));
+  sideSheet(ear,tilt,-E);
+  sideSheet(ear,tilt,E-T);
+}
+cyl(3,W+2*T+4-(E-T),M.zinc,E-T,22,0,tilt,16,'x'); // M6 lock screw through the slot
+starKnob(tilt,W+2*T+1,22,0,'x');
+cyl(3.2,9,M.zinc,0,40,0,tilt,16); // ¼″-20 camera screw
+root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});
+/* ---------- End head geometry ---------- */
+{ // laser-etched mark on the left arm
+  const cv=document.createElement('canvas');cv.width=512;cv.height=128;const c=cv.getContext('2d');
+  const tex=new THREE.CanvasTexture(cv);tex.encoding=THREE.sRGBEncoding;tex.anisotropy=4;
+  const draw=()=>{c.clearRect(0,0,512,128);c.fillStyle='#d9dedc';c.textAlign='center';c.textBaseline='middle';
+    c.font='700 64px "Space Grotesk", sans-serif';c.fillText('DDLC.AI',256,48);c.font='500 24px "JetBrains Mono", monospace';c.fillText('SENSE HEAD · PT-2',256,104);tex.needsUpdate=true;};
+  draw();if(document.fonts&&document.fonts.load)Promise.all([document.fonts.load('700 64px "Space Grotesk"'),document.fonts.load('500 24px "JetBrains Mono"')]).then(draw).catch(()=>{});
+  const pl=new THREE.Mesh(new THREE.PlaneGeometry(44,11),new THREE.MeshStandardMaterial({map:tex,transparent:true,roughness:0.5}));
+  pl.rotation.y=-Math.PI/2;pl.position.set(-W-2*T-0.1,36,0);pan.add(pl);
+}
+{ // studio reflections so the metal reads as metal
+  const pm=new THREE.PMREMGenerator(renderer),es=new THREE.Scene();
+  es.add(new THREE.Mesh(new THREE.BoxGeometry(10,10,10),new THREE.MeshBasicMaterial({color:0x1a1d1f,side:THREE.BackSide})));
+  for(const [x,y,z,w,h,ry,rx] of[[0,4.9,0,6,3,0,Math.PI/2],[4.9,1.5,0,4,1.5,-Math.PI/2,0],[-4.9,2,1,2,3,Math.PI/2,0],[0,1,-4.9,5,1,0,0]]){
+    const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({color:0xffffff,side:THREE.DoubleSide}));m.position.set(x,y,z);m.rotation.set(rx,ry,0);es.add(m);}
+  scene.environment=pm.fromScene(es,0.04).texture;
+  M.powder.envMapIntensity=0.25;M.nylon.envMapIntensity=0.3;
+}
+
+const ground=new THREE.Mesh(new THREE.CircleGeometry(3,64),new THREE.MeshStandardMaterial({color:0x070809,roughness:0.85,metalness:0.1,envMapIntensity:0}));
+ground.rotation.x=-Math.PI/2; ground.position.y=-STUB/1000; ground.receiveShadow=true; scene.add(ground);
+const grid=new THREE.GridHelper(1.2,48,0x2a3133,0x1b2022); grid.position.y=-STUB/1000+0.0005; scene.add(grid);
+
+/* ---------- Pose ---------- */
+const sP=$('sP'),sT=$('sT');
+const sgn=v=>(v>0?'+':v<0?'−':'')+Math.abs(v)+'°';
+function apply(){
+  const p=+sP.value,t=+sT.value;
+  pan.rotation.y=THREE.MathUtils.degToRad(p);
+  tilt.rotation.x=THREE.MathUtils.degToRad(-t);
+  $('oP').textContent=sgn(p);$('oT').textContent=sgn(t);
+  $('hBig').textContent=sgn(p)+' / '+sgn(t);
+}
+[sP,sT].forEach(el=>el.addEventListener('input',apply));
+$('bLvl').onclick=()=>{sP.value=0;sT.value=0;apply();};
+$('bFit').onclick=resetView;
+apply();
+
+/* ---------- Parts ---------- */
+const bom=[
+  [1,'Base disc','Ø80 × 3 MS, laser-cut and etched 0–360°, welded on the mast with 4 gussets; M10 stud welded in'],
+  [4,'Gusset','3 mm MS triangle, 22 × 24'],
+  [1,'U-bracket','3 mm MS blank 50 × 270, two 90° bends; Ø8.4 pivot holes, R22 arc slot for tilt lock'],
+  [1,'Tilt cradle','3 mm MS blank 35 × 182, two 90° bends; 4 × M3 slots, ¼″ hole, 2 cable holes'],
+  [1,'Pan lock','M10 5-lobe knob + Ø28 PTFE washer'],
+  [2,'Tilt pivot','M8 × 25 bolt, nyloc, nylon washer'],
+  [1,'Tilt lock','M6 5-lobe knob through the arc slot'],
+];
+const rho=7.85e-6,sheet=(80*80*Math.PI/4+4*22*24/2+50*270+35*182)*T*rho;
+$('bom').innerHTML=bom.map(([q,n,spec])=>`<tr><td class="n" style="text-align:left">${q}×</td><td>${n}<small>${spec}</small></td></tr>`).join('')+`<tr><td></td><td><b>Sheet steel ≈ ${sheet.toFixed(2)} kg</b><small>plus about 0.1 kg of fasteners and knobs</small></td></tr>`;
+
+/* ---------- Loop ---------- */
+function resize(){
+  const r=canvas.parentElement.getBoundingClientRect();
+  renderer.setSize(r.width,r.height,false);
+  camera.aspect=r.width/Math.max(1,r.height);camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(canvas.parentElement);resize();
+renderer.setAnimationLoop(now=>{
+  controls.update();renderer.render(scene,camera);
+});
+})();
+</script>
+
+</html>
