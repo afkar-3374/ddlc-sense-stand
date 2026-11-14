@@ -34,6 +34,7 @@ aside{background:var(--panel);border-left:1px solid var(--line);overflow-y:auto;
 h1{font-family:var(--f-display);font-size:28px;margin:6px 0 6px;text-wrap:balance}
 h2{font-family:var(--f-display);font-size:15px;margin:0 0 12px;letter-spacing:.02em}
 p{margin:0;color:var(--muted);line-height:1.55}
+a{color:var(--accent)}
 .ctrl{display:flex;flex-direction:column;gap:16px}
 .row{display:grid;grid-template-columns:1fr auto;gap:6px 10px;align-items:center}
 .row label{font-weight:500}
@@ -69,37 +70,34 @@ tfoot td{font-weight:600;border-bottom:none}
     <div class="hud">
       <span class="lbl">Mount-plate height</span>
       <span class="big" id="hH">180<small>cm</small></span>
-      <span class="sub" id="hSub">pan 0° · tilt 0°</span>
+      <span class="sub" id="hSub"></span>
     </div>
-    <div class="hint">Drag to orbit · scroll or pinch to zoom</div>
+    <div class="hint" id="tip">Drag a part to move it · drag empty space to orbit</div>
   </div>
 
   <aside>
     <div>
-      <div class="eyebrow">Sense R1 floor stand · concept rev A</div>
+      <div class="eyebrow">Sense R1 floor stand · rev B</div>
       <h1>DDLC Sense Stand</h1>
-      <p>Four-stage telescopic MS mast on a chamfered base plate, with a lockable pan hub and tilt clevis at the head. All sizes in mm.</p>
+      <p>Four-stage telescopic MS mast on a chamfered base plate, topped by a 3 mm sheet-metal pan &amp; tilt head. Grab any moving part in the model to operate it. All sizes in mm.</p>
     </div>
 
-    <section class="ctrl">
-      <h2>Pose</h2>
-      <div class="row"><label for="sH">Height</label><output id="oH"></output><input id="sH" type="range" step="1"></div>
-      <div class="row"><label for="sP">360° rotation</label><output id="oP"></output><input id="sP" type="range" min="-180" max="180" value="35" step="1"></div>
-      <div class="row"><label for="sT">Tilt</label><output id="oT"></output><input id="sT" type="range" min="-45" max="90" value="-12" step="1"></div>
-      <div class="btns">
-        <button id="bMin" type="button">Collapsed</button>
-        <button id="bMax" type="button">Full height</button>
-        <button id="bFit" type="button">Reset view</button>
-        <button id="bSpin" type="button" aria-pressed="false">Turntable</button>
-      </div>
+    <section>
+      <h2>Operate it</h2>
+      <ul class="feat">
+        <li><b>Height</b><span>Grab the mast or head and drag up / down</span></li>
+        <li><b>Rotate</b><span>Grab the U-bracket and drag left / right</span></li>
+        <li><b>Tilt</b><span>Grab the mount plate and drag up / down</span></li>
+        <li><b>View</b><span>Drag empty space to orbit, scroll or pinch to zoom</span></li>
+      </ul>
     </section>
 
     <section>
       <h2>Features</h2>
       <ul class="feat">
         <li><b>Adjustable height</b><span id="fH"></span></li>
-        <li><b>360° rotation</b><span>6205 bearing pan hub, M8 lock knob</span></li>
-        <li><b>Multi-angle tilt</b><span>−45° to +90°, M10 pivot with clamp knob</span></li>
+        <li><b>360° rotation</b><span>Bent 3 mm U-bracket on an M10 stud, PTFE washer, star-knob lock</span></li>
+        <li><b>Multi-angle tilt</b><span>−45° to +90°, M8 pivots, M6 knob in an arc slot</span></li>
         <li><b>MS sheet build</b><span>Laser-cut plate and gussets, ERW square tube</span></li>
         <li><b>Portable</b><span>Mast lifts out of the base socket in one piece</span></li>
         <li><b>Stable base</b><span>450 × 450 plate, 4 × M12 swivel levelling feet</span></li>
@@ -115,7 +113,7 @@ tfoot td{font-weight:600;border-bottom:none}
       </table></div>
     </section>
 
-    <p class="note">Height range 120–300 cm, measured floor to mount plate: four 805 mm stages, each overlapping the stage below by at least 144 mm at full height. Stand only: the mount plate carries 4 × M3 slots and a ¼″-20 stud, ready for the Sense R1 once its fixing holes are confirmed.</p>
+    <p class="note">Height range 120–300 cm, measured floor to mount plate: four 805 mm stages, each overlapping the stage below by at least 128 mm at full height. Head: all 3 mm MS sheet, see <a href="head.html">head model</a>. Stand only: the mount plate carries 4 × M3 slots and a ¼″-20 stud, ready for the Sense R1 once its fixing holes are confirmed.</p>
   </aside>
 </div>
 
@@ -131,7 +129,7 @@ const P={
   footH:50, footInset:185,
   gusset:{w:150,h:220,t:4},
   tubes:[60,50,40,30], wall:1.6, L:805,
-  eMin:60, headH:156, maxTotal:3000,
+  eMin:60, headH:110, maxTotal:3000,
 };
 const plateTop=P.footH+P.plateT;
 const eMax=(P.maxTotal-plateTop-P.L-P.headH)/3;
@@ -283,64 +281,184 @@ const stages=P.tubes.map((size,i)=>{
   pl.position.set(0,430,P.tubes[0]/2+0.4);stages[0].add(pl);
 })();
 
-/* ---------- Head: pan hub + tilt clevis + mount ---------- */
+/* ---------- Head: 3 mm sheet-metal pan & tilt (same as head.html) ---------- */
+Object.assign(M,{
+  powder:new THREE.MeshStandardMaterial({color:0x111315,roughness:0.6,metalness:0.3,side:THREE.DoubleSide}),
+  nylon:new THREE.MeshStandardMaterial({color:0x0d0d0d,roughness:0.75}),
+  ptfe:new THREE.MeshStandardMaterial({color:0xe8e6df,roughness:0.6}),
+  paint:new THREE.MeshStandardMaterial({color:0xd9dedc,roughness:0.5}),
+});
 const head=new THREE.Group();root.add(head);
-box(46,6,46,M.steelEdge,0,0,0,head);
-cyl(32,14,M.steel,0,6,0,head);
-cyl(33,2,M.green,0,19,0,head);
-tKnob(head,0,13,32,1).rotation.y=-Math.PI/2;
-const pan=new THREE.Group();pan.position.y=20;head.add(pan);
-cyl(32,14,M.steel,0,0,0,pan);
-box(120,6,64,M.steel,0,14,0,pan);
-for(const sx of[-1,1]){
-  const plate=new THREE.Shape();plate.moveTo(-32,0);plate.lineTo(32,0);plate.lineTo(32,52);plate.absarc(0,52,32,0,Math.PI,false);plate.closePath();
-  const g=new THREE.ExtrudeGeometry(plate,{depth:6,bevelEnabled:false});g.translate(0,0,-3);g.rotateY(Math.PI/2);
-  const m=new THREE.Mesh(g,M.steel);m.position.set(sx*49,20,0);pan.add(m);
-}
-const tilt=new THREE.Group();tilt.position.y=75;pan.add(tilt);
-cyl(6,124,M.zinc,0,0,0,tilt,20,'x');
-box(88,30,34,M.steelEdge,0,-15,0,tilt);
-box(24,40,24,M.steel,0,15,0,tilt);
-box(120,6,35,M.steel,0,55,0,tilt);
-box(122,1.6,37,M.green,0,57.2,0,tilt);
-cyl(3.2,9,M.zinc,0,61,0,tilt,12);
-// tilt clamp knob (lobed)
+let pan,tilt;
 {
-  const kg=new THREE.Group();kg.position.x=64;tilt.parent.add(kg);kg.position.y=75;
-  const body=new THREE.Mesh(new THREE.CylinderGeometry(17,17,16,24),M.steel);body.rotation.z=Math.PI/2;kg.add(body);
-  for(let i=0;i<6;i++){const a=i*Math.PI/3;const l=new THREE.Mesh(new THREE.CylinderGeometry(6,6,16,14),M.steel);l.rotation.z=Math.PI/2;l.position.set(0,Math.cos(a)*17,Math.sin(a)*17);kg.add(l);}
-  const cap=new THREE.Mesh(new THREE.CylinderGeometry(9,9,2,24),M.green);cap.rotation.z=Math.PI/2;cap.position.x=9;kg.add(cap);
+const T=3;     // every sheet part is 3 mm MS
+const PIV=70;  // tilt pivot height above the mast top
+const add=(g,mat,parent,x=0,y=0,z=0)=>{const m=new THREE.Mesh(g,mat);m.position.set(x,y,z);parent.add(m);return m;};
+function cyl(r,h,mat,x,y,z,parent,seg=40,axis='y'){ // axis y: y = bottom; axis x: x = start face
+  const m=add(new THREE.CylinderGeometry(r,r,h,seg),mat,parent,axis==='x'?x+h/2:x,axis==='y'?y+h/2:y,z);
+  if(axis==='x')m.rotation.z=Math.PI/2;return m;
 }
-// mount plate fixing slots (4 × M3) — stand only, no device fitted
-for(const sx of[-1,1])for(const sz of[-1,1])box(12,0.6,3.4,M.rubber,sx*44,61,sz*9,tilt);
+function rectPath(half,P_){const p=P_||new THREE.Path();p.moveTo(-half,-half);p.lineTo(half,-half);p.lineTo(half,half);p.lineTo(-half,half);p.closePath();return p;}
+function sqTube(size,wall,len,mat,y,parent){
+  const s=rectPath(size/2,new THREE.Shape());s.holes.push(rectPath(size/2-wall));
+  const g=new THREE.ExtrudeGeometry(s,{depth:len,bevelEnabled:false});g.rotateX(-Math.PI/2);return add(g,mat,parent,0,y,0);
+}
+const circ=(x,y,r)=>{const h=new THREE.Path();h.absarc(x,y,r,0,Math.PI*2,true);return h;};
+// flat sheet whose outline is drawn in the side view (u = −z, v = y), cut T thick along +x from x0
+function sideSheet(shape,parent,x0,mat=M.powder){
+  const g=new THREE.ExtrudeGeometry(shape,{depth:T,bevelEnabled:false,curveSegments:24});g.rotateY(Math.PI/2);
+  return add(g,mat,parent,x0,0,0);
+}
+// 90° bend seen from the front, centre (cx,cy), quadrant start angle a0, length along z
+function bend(parent,cx,cy,a0,len,ri=T){
+  const s=new THREE.Shape();s.absarc(0,0,ri+T,a0,a0+Math.PI/2,false);s.absarc(0,0,ri,a0+Math.PI/2,a0,true);
+  const g=new THREE.ExtrudeGeometry(s,{depth:len,bevelEnabled:false,curveSegments:8});g.translate(0,0,-len/2);
+  return add(g,M.powder,parent,cx,cy,0);
+}
+function starKnob(parent,x,y,z,axis){ // 5-lobe nylon knob; axis 'y' up, 'x' sideways (+x)
+  const g=new THREE.Group();g.position.set(x,y,z);if(axis==='x')g.rotation.z=-Math.PI/2;parent.add(g);
+  cyl(9,11,M.nylon,0,0,0,g,28);
+  for(let i=0;i<5;i++){const a=i*Math.PI*2/5;cyl(4.6,11,M.nylon,Math.cos(a)*10,0,Math.sin(a)*10,g,16);}
+  cyl(5,1,M.green,0,11,0,g,20);
+  return g;
+}
 
+// 1. Base disc Ø80 × 3, welded on the mast with 4 sheet gussets; captive M10 stud
+cyl(40,T,M.powder,0,0,0,head,64);
+for(let k=0;k<4;k++){
+  const s=new THREE.Shape();s.moveTo(0,0);s.lineTo(0,-24);s.lineTo(22,0);s.closePath();
+  const g=new THREE.ExtrudeGeometry(s,{depth:T,bevelEnabled:false});g.translate(15,0,-T/2);
+  const m=add(g,M.powder,head);m.rotation.y=k*Math.PI/2;
+}
+for(let i=0;i<36;i++){ // laser-etched 10° scale
+  const a=i*Math.PI/18,long=i%3===0,r0=long?31:34;
+  const t=add(new THREE.BoxGeometry(0.6,0.15,38.5-r0),M.paint,head,Math.sin(a)*(r0+38.5)/2,T+0.05,Math.cos(a)*(r0+38.5)/2);t.rotation.y=a;
+}
+cyl(5,16,M.zinc,0,T,0,head,20); // M10 stud
+cyl(14,1,M.ptfe,0,T,0,head,40); // PTFE slide washer
+
+// 2. U-bracket: one 3 mm blank, two 90° bends; turns on the stud
+pan=new THREE.Group();head.add(pan);
+const BY=T+1, W=58.5; // bracket underside, inner half-width to bend centres
+add(new THREE.BoxGeometry(2*W,T,50),M.powder,pan,0,BY+T/2,0);
+add(new THREE.BoxGeometry(1.2,0.2,6),M.green,pan,0,BY+T+0.1,22); // pan index line
+for(const sx of[-1,1])bend(pan,sx*W,BY+2*T,sx>0?-Math.PI/2:Math.PI,50);
+const AR=32; // arm top radius
+function arm(slot){
+  const s=new THREE.Shape();s.moveTo(-AR,BY+2*T);s.lineTo(AR,BY+2*T);s.lineTo(AR,PIV);s.absarc(0,PIV,AR,0,Math.PI,false);s.closePath();
+  s.holes.push(circ(0,PIV,4.2));
+  if(slot){ // tilt arc slot, R22, −45° to +90°
+    const R=22,w=3.2,d=Math.PI/180,a0=135*d,a1=0;
+    const h=new THREE.Path();
+    h.absarc(0,PIV,R+w,a0,a1,true);
+    h.absarc(R*Math.cos(a1),PIV+R*Math.sin(a1),w,a1,a1-Math.PI,true);
+    h.absarc(0,PIV,R-w,a1,a0,false);
+    h.absarc(R*Math.cos(a0),PIV+R*Math.sin(a0),w,a0+Math.PI,a0,true);
+    s.holes.push(h);
+  }
+  return s;
+}
+sideSheet(arm(false),pan,-W-2*T);
+sideSheet(arm(true),pan,W+T);
+starKnob(pan,0,BY+T,0,'y'); // pan lock on the stud
+// tilt scale etched round the slot
+for(let deg=-45;deg<=90;deg+=15){
+  const g=new THREE.Group();g.position.set(W+2*T+0.1,PIV,0);g.rotation.x=-deg*Math.PI/180;pan.add(g);
+  add(new THREE.BoxGeometry(0.15,deg%45===0?4:2.5,0.6),M.paint,g,0,26.5+(deg%45===0?2:1.25),0);
+}
+// pivot: M8 bolt, nylon washers, nyloc
+for(const sx of[-1,1]){ // short M8 bolt each side: head outside, nyloc inside the ear
+  const o=sx>0?W+2*T:-W-2*T, i=sx>0?W-2*T:-W+2*T;
+  cyl(4,4*T+12,M.zinc,sx>0?i-6:o,PIV,0,pan,20,'x');
+  cyl(7.5,5.3,M.zinc,sx>0?o:o-5.3,PIV,0,pan,6,'x');
+  cyl(7.5,6,M.zinc,sx>0?i-6:i,PIV,0,pan,6,'x');
+}
+for(const sx of[-1,1])cyl(8,1,M.nylon,sx>0?W:-W-1,PIV,0,pan,24,'x');
+
+// 3. Tilt cradle: one 3 mm blank, top plate + two ears bent down
+tilt=new THREE.Group();tilt.position.y=PIV;pan.add(tilt);
+const E=W-T; // ear outer face sits 1 mm inside the arm (nylon washer)
+{
+  const s=new THREE.Shape(),w=E-T*2,d=17.5;
+  s.moveTo(-w,-d);s.lineTo(w,-d);s.lineTo(w,d);s.lineTo(-w,d);s.closePath();
+  for(const sx of[-1,1])for(const sz of[-1,1]){const h=new THREE.Path(),cx=sx*40,cy=sz*9;
+    h.moveTo(cx-4.3,cy-1.7);h.lineTo(cx+4.3,cy-1.7);h.absarc(cx+4.3,cy,1.7,-Math.PI/2,Math.PI/2,false);h.lineTo(cx-4.3,cy+1.7);h.absarc(cx-4.3,cy,1.7,Math.PI/2,1.5*Math.PI,false);s.holes.push(h);}
+  s.holes.push(circ(0,0,3.4));
+  for(const sx of[-1,1])s.holes.push(circ(sx*20,0,6)); // lightening / cable holes
+  const g=new THREE.ExtrudeGeometry(s,{depth:T,bevelEnabled:false,curveSegments:16});g.rotateX(-Math.PI/2);
+  add(g,M.powder,tilt,0,40-T,0);
+  add(new THREE.BoxGeometry(2*w,0.6,0.6),M.green,tilt,0,40-T/2,17.8);
+  for(const sx of[-1,1])bend(tilt,sx*(E-2*T),40-2*T,sx>0?0:Math.PI/2,35);
+  const ear=new THREE.Shape();ear.moveTo(-17.5,40-2*T);ear.lineTo(-17.5,0);ear.absarc(0,0,17.5,Math.PI,2*Math.PI,false);ear.lineTo(17.5,40-2*T);ear.closePath();
+  ear.holes.push(circ(0,0,4.2));ear.holes.push(circ(0,22,3.2));
+  sideSheet(ear,tilt,-E);
+  sideSheet(ear,tilt,E-T);
+}
+cyl(3,W+2*T+4-(E-T),M.zinc,E-T,22,0,tilt,16,'x'); // M6 lock screw through the slot
+starKnob(tilt,W+2*T+1,22,0,'x');
+cyl(3.2,9,M.zinc,0,40,0,tilt,16); // ¼″-20 camera screw
+}
 root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});
 ground.castShadow=false;
 
-/* ---------- Pose ---------- */
-const sH=$('sH'),sP=$('sP'),sT=$('sT');
-sH.min=Math.max(120,Math.ceil(Hmin/10));sH.max=Math.floor(Hmax/10);sH.value=180;
-$('fH').textContent=`${sH.min}–${sH.max} cm, 4 stages, collar locks`;
+/* ---------- Pose: drag the parts themselves ---------- */
+const st={h:180,p:35,t:-12};
+const Hlo=Math.max(120,Math.ceil(Hmin/10)),Hhi=Math.floor(Hmax/10);
+$('fH').textContent=`${Hlo}–${Hhi} cm, 4 stages, collar locks`;
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+const sgn=v=>(v>0?'+':v<0?'−':'')+Math.abs(v)+'°';
 function apply(){
-  const Hmm=+sH.value*10;
+  const Hmm=st.h*10;
   const e=Math.min(eMax,Math.max(P.eMin,(Hmm-plateTop-P.L-P.headH)/3));
   stages.forEach((g,i)=>g.position.y=plateTop+i*e);
   head.position.y=plateTop+3*e+P.L;
-  pan.rotation.y=THREE.MathUtils.degToRad(+sP.value);
-  tilt.rotation.x=THREE.MathUtils.degToRad(-sT.value);
-  $('oH').textContent=sH.value+' cm';
-  $('oP').textContent=(+sP.value>0?'+':'')+sP.value+'°';
-  $('oT').textContent=(+sT.value>0?'+':'')+sT.value+'°';
-  $('hH').innerHTML=sH.value+'<small>cm</small>';
-  $('hSub').textContent=`pan ${sP.value}° · tilt ${sT.value}° · overlap ${Math.round(P.L-e)} mm`;
+  pan.rotation.y=THREE.MathUtils.degToRad(st.p);
+  tilt.rotation.x=THREE.MathUtils.degToRad(-st.t);
+  $('hH').innerHTML=Math.round(st.h)+'<small>cm</small>';
+  $('hSub').textContent=`rotate ${sgn(Math.round(st.p))} · tilt ${sgn(Math.round(st.t))} · overlap ${Math.round(P.L-e)} mm`;
 }
-[sH,sP,sT].forEach(el=>el.addEventListener('input',apply));
-$('bMin').onclick=()=>{sH.value=sH.min;apply();};
-$('bMax').onclick=()=>{sH.value=sH.max;apply();};
-$('bFit').onclick=resetView;
-let spin=false;
-$('bSpin').onclick=e=>{spin=!spin;e.currentTarget.setAttribute('aria-pressed',spin);e.currentTarget.textContent=spin?'Stop turntable':'Turntable';};
 apply();
+
+// invisible grab zones so the thin sheet parts are easy to catch
+const proxyMat=new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false});
+const T=3,W=58.5,BY=4,PIV=70; // head dimensions (see head block)
+const proxy=(w,h,d,x,y,z,parent)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),proxyMat);m.position.set(x,y,z);m.userData.proxy=true;parent.add(m);};
+proxy(124,52,44,0,20,0,tilt);
+for(const sx of[-1,1])proxy(14,PIV+30,70,sx*(W+1.5*T),(PIV+30)/2+BY,0,pan);
+proxy(2*W,14,56,0,BY+5,0,pan);
+// what each part does when grabbed
+const partOf=o=>{for(;o;o=o.parent){if(o===tilt)return'tilt';if(o===pan)return'pan';if(o===head||stages.indexOf(o)>0)return'height';if(o===root)return null;}return null;};
+const tips={height:'Drag up / down to set height',pan:'Drag left / right to rotate 360°',tilt:'Drag up / down to tilt'};
+const ray=new THREE.Raycaster(),ndc=new THREE.Vector2();
+function pick(ev){
+  const r=canvas.getBoundingClientRect();
+  ndc.set((ev.clientX-r.left)/r.width*2-1,-(ev.clientY-r.top)/r.height*2+1);
+  ray.setFromCamera(ndc,camera);
+  const hit=ray.intersectObject(root,true)[0];
+  return hit?{part:partOf(hit.object),point:hit.point}:{part:null};
+}
+let drag=null;
+const view=canvas.parentElement,tipEl=$('tip');
+view.addEventListener('pointerdown',ev=>{
+  if(!ev.isPrimary)return;
+  const h=pick(ev);if(!h.part)return;
+  controls.enabled=false; // capture phase: OrbitControls never starts
+  const r=canvas.getBoundingClientRect();
+  const dist=camera.position.distanceTo(h.point);
+  drag={part:h.part,x:ev.clientX,y:ev.clientY,s:{...st},cmPerPx:2*dist*Math.tan(THREE.MathUtils.degToRad(camera.fov/2))/r.height*100};
+  canvas.setPointerCapture(ev.pointerId);canvas.style.cursor='grabbing';
+},true);
+canvas.addEventListener('pointermove',ev=>{
+  if(!drag){ if(ev.pointerType==='mouse'){const h=pick(ev);canvas.style.cursor=h.part?'grab':'';tipEl.textContent=h.part?tips[h.part]:'Drag a part to move it · drag empty space to orbit';} return; }
+  const dx=ev.clientX-drag.x,dy=ev.clientY-drag.y;
+  if(drag.part==='height')st.h=clamp(drag.s.h-dy*drag.cmPerPx,Hlo,Hhi);
+  if(drag.part==='pan'){st.p=drag.s.p+dx*0.6;st.p=((st.p+180)%360+360)%360-180;}
+  if(drag.part==='tilt')st.t=clamp(drag.s.t-dy*0.6,-45,90);
+  tipEl.textContent=tips[drag.part];
+  apply();
+});
+const end=()=>{if(!drag)return;drag=null;controls.enabled=true;canvas.style.cursor='grab';};
+canvas.addEventListener('pointerup',end);canvas.addEventListener('pointercancel',end);
 
 /* ---------- Cut list with mass estimate (MS, 7850 kg/m³) ---------- */
 const rho=7.85e-6; // kg/mm³
@@ -352,9 +470,10 @@ const bom=[
   [1,'Base socket','70×70×4 ERW tube, 120 long + M8 T-knob',4*66*4*120*rho],
   ...P.tubes.map((s,i)=>[1,`Mast stage ${i+1}`,`${s}×${s}×${P.wall} ERW tube, ${P.L} long`,tubeKg(s)]),
   [3,'Clamp collar',`3 mm MS sheet, bent; M8 T-knob; nylon guide pads`,[70,60,50].reduce((a,s)=>a+4*s*5*42*rho,0)],
-  [1,'Pan hub','Turned MS housing, 6205-2RS bearing, M8 lock knob',0.55],
-  [1,'Tilt clevis','2 × 6 mm MS plate on 6 mm base, M10 pivot, lobed clamp knob',0.62],
-  [1,'Mount plate','120×35×5 MS, 4 × M3 slots + ¼″-20 stud',120*35*5*rho],
+  [1,'Head base disc','Ø80 × 3 MS + 4 gussets, etched 0–360°, M10 stud',(80*80*Math.PI/4+4*22*24/2)*3*rho],
+  [1,'U-bracket','3 mm MS blank 50 × 270, two bends, arc slot',50*270*3*rho],
+  [1,'Tilt cradle / mount plate','3 mm MS blank 35 × 182, two bends, 4 × M3 slots, ¼″ hole',35*182*3*rho],
+  [1,'Head hardware','M10 + M6 star knobs, 2 × M8 bolts, PTFE + nylon washers',0.1],
   [4,'Levelling foot','M12 × 60 swivel, Ø56 rubber pad, 2 lock nuts',0.6],
 ];
 let tot=0;
@@ -368,9 +487,7 @@ function resize(){
   camera.aspect=r.width/Math.max(1,r.height);camera.updateProjectionMatrix();
 }
 new ResizeObserver(resize).observe(canvas.parentElement);resize();
-const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
 renderer.setAnimationLoop(()=>{
-  if(spin&&!reduce)root.rotation.y+=0.004;
   controls.update();renderer.render(scene,camera);
 });
 })();

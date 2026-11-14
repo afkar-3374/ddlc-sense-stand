@@ -18,7 +18,7 @@ root.scale.setScalar(1);
 root.updateMatrixWorld(true);
 const tris=[];const v=new THREE.Vector3();
 root.traverse(o=>{
-  if(!o.isMesh||o.geometry.type==='PlaneGeometry')return;
+  if(!o.isMesh||o.userData.proxy||o.geometry.type==='PlaneGeometry')return;
   let g=o.geometry.index?o.geometry.toNonIndexed():o.geometry.clone();
   g.applyMatrix4(o.matrixWorld);
   const p=g.attributes.position;
